@@ -17,3 +17,4 @@
 | ai-dev-workflow | adapted | https://github.com/addyosmani/agent-skills | — |
 | pinokio | installed | unknown | — |
 | skill-anatomy | custom | — | — |
+| html-slides | custom | — | — |
