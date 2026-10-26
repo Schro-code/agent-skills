@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>{{TITLE}}</title>
+<style>
+  /* Theme: rebrand by changing these values only. */
+  :root {
+    --accent: #2F5BEA;
+    --accent-ink: #FFFFFF;
+    --ink: #1B1F24;
+    --muted: #5B6470;
+    --bg: #FFFFFF;
+    --surface: #F3F5F8;
+    --line: #DDE2E8;
+    --dark: #12161C;
+    --dark-ink: #F4F6F8;
+    --ok: #1E7F4F;
+    --warn: #A86400;
+    --bad: #B42318;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    /* 1u = 1% of the slide width; the slide keeps 16:9 inside any viewport. */
+    --u: min(1vw, 1.7778vh);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: #0B0D10;
+    font-family: var(--font);
+  }
+  [hidden] { display: none !important; }
+
+  .deck { position: relative; width: calc(100 * var(--u)); height: calc(56.25 * var(--u)); }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: calc(6 * var(--u)) calc(7 * var(--u));
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: calc(1.6 * var(--u));
+    line-height: 1.45;
+  }
+  .slide.is-active { display: flex; animation: enter .35s ease-out; }
+  @keyframes enter { from { opacity: 0; transform: translateY(calc(.8 * var(--u))); } }
+  @media (prefers-reduced-motion: reduce) { .slide.is-active { animation: none; } }
+
+  .slide[data-bg="dark"] { background: var(--dark); color: var(--dark-ink); }
+  .slide[data-bg="accent"] { background: var(--accent); color: var(--accent-ink); }
+  .slide.center { align-items: center; text-align: center; }
+  .slide.center p { margin-left: auto; margin-right: auto; }
+
+  /* Page number and logo are added at load time by the script. */
+  .slide::after {
+    content: attr(data-num);
+    position: absolute;
+    left: calc(3 * var(--u));
+    bottom: calc(2.4 * var(--u));
+    font-size: calc(1.1 * var(--u));
+    opacity: .55;
+  }
+  .brand-mark {
+    position: absolute;
+    right: calc(3 * var(--u));
+    bottom: calc(2.2 * var(--u));
+    height: calc(2.6 * var(--u));
+    width: auto;
+  }
+
+  .eyebrow {
+    margin: 0 0 calc(1.2 * var(--u));
+    font-size: calc(1.1 * var(--u));
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .slide[data-bg] .eyebrow { color: inherit; opacity: .75; }
+  h1 { margin: 0 0 calc(1.6 * var(--u)); font-size: calc(4.6 * var(--u)); line-height: 1.1; letter-spacing: -.01em; }
+  h2 { margin: 0 0 calc(2.4 * var(--u)); font-size: calc(3.2 * var(--u)); line-height: 1.15; }
+  h3 { margin: 0 0 calc(.6 * var(--u)); font-size: calc(1.8 * var(--u)); }
+  p { margin: 0 0 calc(1 * var(--u)); max-width: calc(62 * var(--u)); }
+  .lead { font-size: calc(2 * var(--u)); color: var(--muted); }
+  .slide[data-bg] .lead { color: inherit; opacity: .85; }
+  .note { margin-top: calc(2 * var(--u)); font-size: calc(1.2 * var(--u)); color: var(--muted); }
+  .slide[data-bg] .note { color: inherit; opacity: .7; }
+  a { color: inherit; }
+
+  .bullets { list-style: none; margin: 0; padding: 0; max-width: calc(70 * var(--u)); }
+  .bullets li { position: relative; margin-bottom: calc(1.2 * var(--u)); padding-left: calc(2.4 * var(--u)); font-size: calc(2 * var(--u)); }
+  .bullets li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: .55em;
+    width: calc(.9 * var(--u));
+    height: calc(.9 * var(--u));
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .grid, .stats { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: calc(2 * var(--u)); }
+  .card { padding: calc(2.4 * var(--u)); border-top: calc(.4 * var(--u)) solid var(--accent); border-radius: calc(1.2 * var(--u)); background: var(--surface); }
+  .card .num { margin-bottom: calc(1 * var(--u)); font-size: calc(1.2 * var(--u)); font-weight: 700; color: var(--accent); }
+  .card p { font-size: calc(1.4 * var(--u)); color: var(--muted); }
+
+  .stats { gap: calc(3 * var(--u)); }
+  .stat .value { font-size: calc(6 * var(--u)); font-weight: 700; line-height: 1; color: var(--accent); }
+  .stat .label { margin-top: calc(.8 * var(--u)); font-size: calc(1.4 * var(--u)); color: var(--muted); }
+
+  .quote { margin: 0; padding-left: calc(3 * var(--u)); border-left: calc(.6 * var(--u)) solid var(--accent); max-width: calc(70 * var(--u)); }
+  .quote p { font-size: calc(3 * var(--u)); line-height: 1.3; max-width: none; }
+  .quote cite { display: block; margin-top: calc(2 * var(--u)); font-size: calc(1.4 * var(--u)); font-style: normal; color: var(--muted); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: calc(2.4 * var(--u)); }
+  .col { padding: calc(2.6 * var(--u)); border-radius: calc(1.2 * var(--u)); background: var(--surface); }
+  .col.is-bad { box-shadow: inset calc(.4 * var(--u)) 0 0 var(--bad); }
+  .col.is-good { box-shadow: inset calc(.4 * var(--u)) 0 0 var(--ok); }
+  /* The tag repeats the meaning in words so colour is never the only signal. */
+  .tag { margin-bottom: calc(1 * var(--u)); font-size: calc(1.1 * var(--u)); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .is-bad .tag { color: var(--bad); }
+  .is-good .tag { color: var(--ok); }
+
+  .steps { counter-reset: step; display: grid; gap: calc(1.6 * var(--u)); list-style: none; margin: 0; padding: 0; max-width: calc(72 * var(--u)); }
+  .steps li { counter-increment: step; display: grid; grid-template-columns: calc(4 * var(--u)) 1fr; gap: calc(1.6 * var(--u)); align-items: start; }
+  .steps li::before {
+    content: counter(step);
+    display: grid;
+    place-items: center;
+    width: calc(4 * var(--u));
+    height: calc(4 * var(--u));
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: calc(1.6 * var(--u));
+    font-weight: 700;
+  }
+  .steps p { font-size: calc(1.4 * var(--u)); color: var(--muted); }
+
+  .data { width: 100%; border-collapse: collapse; font-size: calc(1.5 * var(--u)); }
+  .data th { padding: calc(1 * var(--u)) calc(1.2 * var(--u)); border-bottom: calc(.2 * var(--u)) solid var(--ink); text-align: left; }
+  .data td { padding: calc(1 * var(--u)) calc(1.2 * var(--u)); border-bottom: 1px solid var(--line); }
+  .badge { display: inline-block; padding: calc(.2 * var(--u)) calc(.8 * var(--u)); border-radius: 99px; font-size: calc(1.1 * var(--u)); font-weight: 600; }
+  .badge.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+  .badge.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .badge.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+
+  /* Viewer chrome, outside the slides. */
+  .progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 10; }
+  .progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+  .controls, .toolbar { position: fixed; z-index: 10; display: flex; gap: 6px; align-items: center; font: 13px var(--font); }
+  .controls { right: 16px; bottom: 16px; }
+  .toolbar { top: 12px; left: 50%; transform: translateX(-50%); flex-wrap: wrap; padding: 6px; border-radius: 8px; background: rgba(11, 13, 16, .85); color: #CFD5DC; }
+  .controls button, .toolbar button, .toolbar select {
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: 6px;
+    background: rgba(20, 24, 30, .8);
+    color: #FFFFFF;
+    font: inherit;
+    cursor: pointer;
+  }
+  .counter { min-width: 4.5em; color: #CFD5DC; text-align: center; }
+  :focus-visible { outline: 2px solid #8FB3FF; outline-offset: 2px; }
+  body.editing [contenteditable="true"] { outline: 1px dashed color-mix(in srgb, currentColor 45%, transparent); outline-offset: 3px; }
+  body.editing [contenteditable="true"]:focus { outline-style: solid; }
+
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    :root { --u: 12.8px; }
+    html, body { display: block; height: auto; overflow: visible; background: none; }
+    .deck { width: auto; height: auto; }
+    .slide {
+      position: relative;
+      display: flex !important;
+      width: 1280px;
+      height: 720px;
+      animation: none !important;
+      break-after: page;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .progress, .controls, .toolbar { display: none !important; }
+    [contenteditable] { outline: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+<main class="deck" id="deck">
+{{SLIDES}}
+</main>
+
+<nav class="controls" aria-label="Slide controls">
+  <button type="button" id="prevBtn" aria-label="Previous slide">&larr;</button>
+  <span class="counter" id="counter" aria-live="polite">1 / 1</span>
+  <button type="button" id="nextBtn" aria-label="Next slide">&rarr;</button>
+  <button type="button" id="editBtn" aria-pressed="false" title="Edit mode (E)">Edit</button>
+</nav>
+
+<div class="toolbar" id="toolbar" role="toolbar" aria-label="Edit tools" hidden>
+  <select id="tplPicker" aria-label="Slide type to add"></select>
+  <button type="button" id="addBtn">Add after current</button>
+  <button type="button" id="dupBtn">Duplicate</button>
+  <button type="button" id="delBtn">Delete</button>
+  <button type="button" id="saveBtn">Save HTML</button>
+  <button type="button" id="printBtn">Print / PDF</button>
+</div>
+
+<!--
+  Slide catalog. Single source of truth for both the agent (via `deck.py catalog`)
+  and the in-browser "Add" picker. data-use says when to pick each type.
+-->
+<template id="tpl-cover" data-label="Cover" data-use="First slide: title, subtitle, author or event.">
+<section class="slide center" data-bg="accent">
+  <p class="eyebrow">Event &middot; Date</p>
+  <h1>Presentation title</h1>
+  <p class="lead">One-line subtitle that frames the talk</p>
+  <p class="note">Author name</p>
+</section>
+</template>
+
+<template id="tpl-statement" data-label="Statement" data-use="Section break or one big question/claim, no detail.">
+<section class="slide center" data-bg="dark">
+  <p class="eyebrow">Section</p>
+  <h1>One big idea or question?</h1>
+</section>
+</template>
+
+<template id="tpl-bullets" data-label="Bullets" data-use="Three to five related points under one heading.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <h2>Slide heading</h2>
+  <ul class="bullets">
+    <li>First point</li>
+    <li><strong>Second point</strong> &mdash; with a short explanation</li>
+    <li>Third point</li>
+  </ul>
+  <p class="note">Optional footnote or source</p>
+</section>
+</template>
+
+<template id="tpl-cards" data-label="Cards" data-use="Two to four parallel concepts of equal weight.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <h2>Slide heading</h2>
+  <div class="grid">
+    <div class="card"><div class="num">01</div><h3>Concept one</h3><p>Short description.</p></div>
+    <div class="card"><div class="num">02</div><h3>Concept two</h3><p>Short description.</p></div>
+    <div class="card"><div class="num">03</div><h3>Concept three</h3><p>Short description.</p></div>
+  </div>
+</section>
+</template>
+
+<template id="tpl-stats" data-label="Stats" data-use="Two to four sourced numbers. Never invent figures.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <h2>Slide heading</h2>
+  <div class="stats">
+    <div class="stat"><div class="value">00%</div><div class="label">What this number measures</div></div>
+    <div class="stat"><div class="value">0.0x</div><div class="label">What this number measures</div></div>
+    <div class="stat"><div class="value">000</div><div class="label">What this number measures</div></div>
+  </div>
+  <p class="note">Source: where the numbers come from</p>
+</section>
+</template>
+
+<template id="tpl-quote" data-label="Quote" data-use="A real, attributable quotation.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <blockquote class="quote">
+    <p>&ldquo;The quotation goes here.&rdquo;</p>
+    <cite>&mdash; Person, context</cite>
+  </blockquote>
+</section>
+</template>
+
+<template id="tpl-compare" data-label="Compare" data-use="Before/after, problem/solution or option A vs option B.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <h2>Slide heading</h2>
+  <div class="cols">
+    <div class="col is-bad"><div class="tag">Before</div><h3>Current situation</h3><p>What is wrong with it.</p></div>
+    <div class="col is-good"><div class="tag">After</div><h3>Proposed situation</h3><p>Why it is better.</p></div>
+  </div>
+</section>
+</template>
+
+<template id="tpl-steps" data-label="Steps" data-use="An ordered process of two to five steps.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <h2>Slide heading</h2>
+  <ol class="steps">
+    <li><div><h3>First step</h3><p>What happens.</p></div></li>
+    <li><div><h3>Second step</h3><p>What happens.</p></div></li>
+    <li><div><h3>Third step</h3><p>What happens.</p></div></li>
+  </ol>
+</section>
+</template>
+
+<template id="tpl-table" data-label="Table" data-use="Small tabular data, at most six rows; optional status badges.">
+<section class="slide">
+  <p class="eyebrow">Section</p>
+  <h2>Slide heading</h2>
+  <table class="data">
+    <thead><tr><th>Item</th><th>Value</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Row one</td><td>Value</td><td><span class="badge ok">Done</span></td></tr>
+      <tr><td>Row two</td><td>Value</td><td><span class="badge warn">In progress</span></td></tr>
+      <tr><td>Row three</td><td>Value</td><td><span class="badge bad">Blocked</span></td></tr>
+    </tbody>
+  </table>
+</section>
+</template>
+
+<template id="tpl-closing" data-label="Closing" data-use="Last slide: the one message to remember and a call to action.">
+<section class="slide center" data-bg="accent">
+  <p class="eyebrow">Takeaway</p>
+  <h1>The one thing to remember</h1>
+  <p class="lead">Call to action or next step</p>
+</section>
+</template>
+
+<script>
+(function () {
+  'use strict';
+
+  // Filled by `deck.py build`. Anything that is not a base64 image data URI is ignored,
+  // so a deck built without a logo simply shows none.
+  var LOGO = { onLight: '__LOGO_ON_LIGHT__', onDark: '__LOGO_ON_DARK__' };
+  var DATA_URI = /^data:image\/(png|jpeg|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
+  var EDITABLE = 'h1,h2,h3,p,cite,th,td,.eyebrow,.value,.label,.num,.tag,.bullets > li';
+
+  var deck = document.getElementById('deck');
+  var counter = document.getElementById('counter');
+  var bar = document.getElementById('progressBar');
+  var toolbar = document.getElementById('toolbar');
+  var editBtn = document.getElementById('editBtn');
+  var picker = document.getElementById('tplPicker');
+  var current = 0;
+  var editing = false;
+
+  function slides() {
+    return Array.prototype.slice.call(deck.querySelectorAll(':scope > .slide'));
+  }
+
+  function decorate(slide) {
+    if (slide.querySelector('.brand-mark')) return;
+    var onDark = slide.dataset.bg === 'dark' || slide.dataset.bg === 'accent';
+    var src = onDark ? LOGO.onDark : LOGO.onLight;
+    if (!DATA_URI.test(src)) return;
+    var img = document.createElement('img');
+    img.className = 'brand-mark';
+    img.alt = '';
+    img.src = src;
+    slide.appendChild(img);
+  }
+
+  // IDs and numbers are derived, so neither the agent nor the user has to keep them in sync.
+  function renumber() {
+    slides().forEach(function (s, i) {
+      s.id = 's' + (i + 1);
+      s.dataset.num = String(i + 1);
+      decorate(s);
+    });
+  }
+
+  function show(n) {
+    var all = slides();
+    if (!all.length) return;
+    current = Math.max(0, Math.min(n, all.length - 1));
+    all.forEach(function (s, i) { s.classList.toggle('is-active', i === current); });
+    counter.textContent = (current + 1) + ' / ' + all.length;
+    bar.style.width = ((current + 1) / all.length * 100) + '%';
+    try { history.replaceState(null, '', '#' + (current + 1)); } catch (e) { /* file:// in some browsers */ }
+  }
+
+  function isTyping(el) {
+    return !!el && (el.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName));
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && isTyping(e.target)) { e.target.blur(); return; }
+    if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+    // Let focused buttons handle their own activation keys.
+    if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+    switch (e.key) {
+      case 'ArrowRight': case 'PageDown': case ' ':
+        e.preventDefault(); show(current + 1); break;
+      case 'ArrowLeft': case 'PageUp':
+        e.preventDefault(); show(current - 1); break;
+      case 'Home': show(0); break;
+      case 'End': show(slides().length - 1); break;
+      case 'e': case 'E': setEditing(!editing); break;
+      case 'Escape': if (editing) setEditing(false); break;
+    }
+  });
+
+  var touchX = null;
+  document.addEventListener('touchstart', function (e) { touchX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (touchX === null || editing) return;
+    var dx = touchX - e.changedTouches[0].clientX;
+    touchX = null;
+    if (Math.abs(dx) > 50) show(current + (dx > 0 ? 1 : -1));
+  });
+
+  function setEditing(on) {
+    editing = on;
+    document.body.classList.toggle('editing', on);
+    toolbar.hidden = !on;
+    editBtn.setAttribute('aria-pressed', String(on));
+    editBtn.textContent = on ? 'Done' : 'Edit';
+    deck.querySelectorAll(EDITABLE).forEach(function (el) {
+      if (on) el.setAttribute('contenteditable', 'true');
+      else el.removeAttribute('contenteditable');
+    });
+    if (!on && isTyping(document.activeElement)) document.activeElement.blur();
+  }
+
+  // Paste as plain text so copied markup or scripts never enter the deck.
+  deck.addEventListener('paste', function (e) {
+    if (!editing) return;
+    e.preventDefault();
+    document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+  });
+
+  var catalog = Array.prototype.slice.call(document.querySelectorAll('template[id^="tpl-"]'));
+  catalog.forEach(function (t) {
+    var option = document.createElement('option');
+    option.value = t.id;
+    option.textContent = t.dataset.label || t.id;
+    picker.appendChild(option);
+  });
+
+  function insertAfterCurrent(node) {
+    var ref = slides()[current];
+    if (ref) ref.after(node); else deck.appendChild(node);
+    renumber();
+    show(ref ? current + 1 : 0);
+    if (editing) setEditing(true);
+  }
+
+  document.getElementById('addBtn').addEventListener('click', function () {
+    var t = document.getElementById(picker.value);
+    if (t) insertAfterCurrent(t.content.firstElementChild.cloneNode(true));
+  });
+
+  document.getElementById('dupBtn').addEventListener('click', function () {
+    var ref = slides()[current];
+    if (ref) insertAfterCurrent(ref.cloneNode(true));
+  });
+
+  document.getElementById('delBtn').addEventListener('click', function () {
+    var all = slides();
+    if (all.length <= 1 || !window.confirm('Delete this slide?')) return;
+    all[current].remove();
+    renumber();
+    show(current);
+  });
+
+  // Saves the deck as authored: no edit attributes, no runtime logo or numbering.
+  function serialize() {
+    var wasEditing = editing;
+    setEditing(false);
+    var root = document.documentElement.cloneNode(true);
+    if (wasEditing) setEditing(true);
+    root.querySelectorAll('.brand-mark').forEach(function (el) { el.remove(); });
+    root.querySelectorAll('#deck > .slide').forEach(function (el) {
+      el.classList.remove('is-active');
+      el.removeAttribute('data-num');
+      el.removeAttribute('id');
+    });
+    root.querySelector('#progressBar').removeAttribute('style');
+    return '<!doctype html>\n' + root.outerHTML;
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', function () {
+    var name = (document.title || 'slides').replace(/[^\w\- ]+/g, '').trim() || 'slides';
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([serialize()], { type: 'text/html' }));
+    a.download = name + '.html';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 0);
+  });
+
+  document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+  document.getElementById('prevBtn').addEventListener('click', function () { show(current - 1); });
+  document.getElementById('nextBtn').addEventListener('click', function () { show(current + 1); });
+  editBtn.addEventListener('click', function () { setEditing(!editing); });
+
+  // Deep links: #3 opens slide 3, also when the hash is edited by hand.
+  function showFromHash() {
+    var n = parseInt(location.hash.slice(1), 10);
+    show(isNaN(n) ? 0 : n - 1);
+  }
+  window.addEventListener('hashchange', showFromHash);
+
+  renumber();
+  showFromHash();
+})();
+</script>
+</body>
+</html>

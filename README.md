@@ -6,6 +6,9 @@
 - **excalidraw-diagram** — Excalidraw JSON diagrams
 - **visualize** — inline Obsidian diagrams for lessons
 
+## Documents & Presentations
+- **html-slides** — self-contained HTML slide decks with edit mode and print-to-PDF
+
 ## Planning & Design
 - **grill-me** — stress-test a plan via relentless interview
 - **grill-with-docs** — grill against domain model + update docs inline
