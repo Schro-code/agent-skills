@@ -16,5 +16,6 @@
 | git-workflow-and-versioning | cloned | https://github.com/addyosmani/agent-skills | — |
 | ai-dev-workflow | adapted | https://github.com/addyosmani/agent-skills | — |
 | pinokio | installed | unknown | — |
+| tldraw-offline | installed | https://github.com/tldraw/tldraw-offline | 2026-10-29 |
 | skill-anatomy | custom | — | — |
 | html-slides | custom | — | — |
